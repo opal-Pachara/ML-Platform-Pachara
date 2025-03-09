@@ -1,14 +1,14 @@
 import streamlit as st
 from PIL import Image
 from datetime import datetime
-from streamlit_autorefresh import st_autorefresh  # เพิ่มโมดูลสำหรับ real-time refresh
+from streamlit_autorefresh import st_autorefresh  # สำหรับ real-time refresh
 from show_introduction import show_introduction
 from show_model_development import show_model_development
 from show_ml import show_ml
 from show_nn import show_nn
 
 def main():
-    # ติดตั้ง auto-refresh (อัพเดททุก 1 วินาที = 1000 มิลลิวินาที)
+    # ตั้งค่า auto-refresh ทุก 1 วินาที
     st_autorefresh(interval=1000, key="visitor_refresh")
 
     # CSS สำหรับปรับแต่งธีมและฟอนต์
@@ -93,8 +93,10 @@ def main():
         st.session_state.session_id = str(datetime.now().timestamp())
         st.session_state.session_ids.add(st.session_state.session_id)
 
-    # นับจำนวนผู้เข้าชมจาก session_ids
-    visitor_count = len(st.session_state.session_ids)
+    # นับจำนวนผู้เข้าชมจริงจาก session_ids
+    real_count = len(st.session_state.session_ids)
+    # เพิ่ม offset เพื่อให้เริ่มที่ 182 (181 + 1 = 182 สำหรับคนแรก)
+    visitor_count = 181 + real_count
 
     # ส่วนที่เหลือของแอป
     st.logo("img/logo.png", size="large")
