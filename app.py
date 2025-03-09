@@ -1,12 +1,16 @@
 import streamlit as st
 from PIL import Image
 from datetime import datetime
+from streamlit_autorefresh import st_autorefresh  # เพิ่มโมดูลสำหรับ real-time refresh
 from show_introduction import show_introduction
 from show_model_development import show_model_development
 from show_ml import show_ml
 from show_nn import show_nn
 
 def main():
+    # ติดตั้ง auto-refresh (อัพเดททุก 1 วินาที = 1000 มิลลิวินาที)
+    st_autorefresh(interval=1000, key="visitor_refresh")
+
     # CSS สำหรับปรับแต่งธีมและฟอนต์
     st.markdown("""
         <style>
@@ -99,7 +103,7 @@ def main():
     st.sidebar.title("Menu")
     page = st.sidebar.radio("", ["Introduction & Data Set", "Algorithm & Model Development", "Machine Learning Model", "Neural Network Model"])
 
-    # ย้ายการแสดงจำนวนผู้เข้าชมไปไว้ใน sidebar ด้านล่าง
+    # แสดงจำนวนผู้เข้าชมใน sidebar ด้วย timestamp แบบ real-time
     st.sidebar.markdown(f"""
         <div style='text-align: center; padding: 15px; background-color: #1e1e1e; border-radius: 10px; margin-top: 20px;'>
             <h3 style='font-family: Athiti; color: #B0B0B0; margin: 0;'>👀 จำนวนคนเข้าชม</h3>
