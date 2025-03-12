@@ -1,6 +1,14 @@
+<<<<<<< HEAD
 streamlit
 streamlit-autorefresh
 pillow
 scikit-learn
 pickle-mixin
+=======
+streamlit
+streamlit-autorefresh
+pillow
+scikit-learn
+pickle-mixin
+>>>>>>> 52b997debca04625307273198d6a328d0b626ccf
 plotly
