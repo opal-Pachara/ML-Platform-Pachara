@@ -202,259 +202,160 @@ print(df.isnull().sum())'''
 
     with tab3:
         st.markdown("""<h4 style='font-family: Athiti; text-align: center;text-indent: 2.5em;'>
-    Detail of DataSet (NN)🧸
+    Detail of DataSet (NN)👩‍💻
     </h4>""", unsafe_allow_html=True)
+        st.markdown("""<p style='font-family: Athiti; text-align: justify;'>
+                    - <span style="font-weight: bold;">Comment</span> กาารระบุข้อมูลของข้อความ <br>
+                    - <span style="font-weight: bold;">Sentiment</span> เป็นการบ่งบอกอารมณ์ของข้อความ <br>
+    </p>""", unsafe_allow_html=True)
+        df = pd.read_csv(r"dataset/YoutubeCommentsDataSet.csv")
+        st.markdown("""<h5 style='font-family: Athiti; text-indent: 2.5em;'>
+    ตารางในไฟล์ CSV
+    </h5>""", unsafe_allow_html=True)
+        st.dataframe(df)
         st.markdown("""<h5 style='font-family: Athiti; text-indent: 2.5em;'>
     Code การพัฒนาโมเดล Neural Network
     </h5>""", unsafe_allow_html=True)
         st.markdown("""<h5 style='font-family: Athiti;'>
-    1.นำเข้าไลบรารีที่จำเป็นทั้งหมด เช่น pandas สำหรับจัดการข้อมูล, torch สำหรับการสร้างโมเดล, และ wandb สำหรับการติดตามการฝึก
+    1.นำเข้าไลบรารีที่จำเป็นทั้งหมด เช่น pandas สำหรับจัดการข้อมูล, torch สำหรับการสร้างโมเดล
     </h5>""", unsafe_allow_html=True)
-        code = '''import wandb
-import pandas as pd
-import numpy as np
+        code = '''import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder, StandardScaler
-import random
+from sklearn.preprocessing import LabelEncoder
+from sklearn.feature_extraction.text import TfidfVectorizer
 import torch
 import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
-from torch.optim.lr_scheduler import ReduceLROnPlateau
-
-# ตรวจสอบ GPU
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"Using device: {device}")
-
-# Initialize Weights & Biases
-wandb.init(project="traffic-prediction", name="pytorch-improved-model")
+from torch.utils.data import DataLoader, TensorDataset
+import joblib
 '''
         st.code(code, language="python", line_numbers=False, wrap_lines=False, height=False)
         st.markdown("""<h5 style='font-family: Athiti;'>
-    2.กำหนดลิสต์ข้อมูลพื้นฐานที่ใช้ในการสร้างชุดข้อมูล เช่น สถานที่, เทศกาล, ช่วงเวลา, วันในสัปดาห์, และสภาพอากาศ
+    2.ข้อความในคอลัมน์ 'Comment' ถูกแปลงเป็นเวกเตอร์ TF-IDF โดยใช้ TfidfVectorizer ซึ่งจำกัดจำนวนคำที่สำคัญที่ใช้ในการสร้างเวกเตอร์. 
+                    ส่วนของ Label ในคอลัมน์ 'Sentiment' ถูกแปลงเป็นตัวเลขเพื่อใช้ในการฝึกโมเดล โดย LabelEncoder จะแปลงค่าของ 'negative', 'neutral', 'positive' 
+                    เป็นตัวเลข 0, 1, 2 ตามลำดับ.
     </h5>""", unsafe_allow_html=True)
-        code = '''# ข้อมูลที่ซับซ้อน
-locations = [
-    "สยามพารากอน", "สนามบินสุวรรณภูมิ", "สนามบินดอนเมือง", "ตลาดนัดจตุจักร", "เซ็นทรัลเวิลด์",
-    "อนุสาวรีย์ชัยสมรภูมิ", "ศูนย์ราชการแจ้งวัฒนะ", "สถานีขนส่งหมอชิต", "สถานีขนส่งเอกมัย", "สถานีหัวลำโพง",
-    "พัทยา", "เชียงใหม่", "ภูเก็ต", "หาดใหญ่", "อยุธยา", "นครราชสีมา", "ขอนแก่น", "หัวหิน"
-]
+        code = '''# แปลง Labels
+label_encoder = LabelEncoder()
+label_encoder.fit(['negative', 'neutral', 'positive'])
+labels = label_encoder.transform(labels)
 
-festivals = ["สงกรานต์", "ปีใหม่", "ลอยกระทง", "เปิดเทอม", "ปิดเทอม", "วันหยุดนักขัตฤกษ์", "วันธรรมดา", "วันวิสาขบูชา", "วันมาฆบูชา"]
-
-time_periods = ["06:00-09:00", "09:00-12:00", "12:00-15:00", "15:00-18:00", "18:00-21:00", "21:00-00:00"]
-
-days_of_week = ["จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"]
-
-weather_conditions = ["แดดออก", "ฝนตก", "ฝนตกหนัก", "หมอก"]
+# แปลงข้อความเป็น TF-IDF
+tfidf = TfidfVectorizer(max_features=5000)
+X = tfidf.fit_transform(texts).toarray()
 '''
         st.code(code, language="python", line_numbers=False, wrap_lines=False, height=False)
 
         st.markdown("""<h5 style='font-family: Athiti;'>
-    3.สร้างข้อมูลจำลอง 1 ล้านแถว โดยสุ่มเลือกข้อมูลจากลิสต์ใน Cell 2
-คำนวณระดับการจราจร (traffic_level) และเวลาเดินทาง (travel_time) 
+    3.ข้อมูลถูกแบ่งออกเป็นสองชุด: ชุดฝึก (training) และชุดทดสอบ (testing) โดยใช้ train_test_split จาก sklearn. 
+                    ชุดฝึกจะใช้ในการฝึกโมเดล ส่วนชุดทดสอบจะใช้สำหรับการประเมินผลของโมเดลหลังการฝึก.
     </h5>""", unsafe_allow_html=True)
 
-        code = '''# สร้างข้อมูล 1,000,000 บรรทัด
-data = []
-for _ in range(1_000_000):
-    start_location = random.choice(locations)
-    end_location = random.choice(locations)
-    while start_location == end_location:
-        end_location = random.choice(locations)
+        code = '''# แบ่งข้อมูล
+X_train, X_test, y_train, y_test = train_test_split(X, labels, test_size=0.2, random_state=42)
 
-    time_period = random.choice(time_periods)
-    year = random.randint(1999, 2024)
-    festival = random.choice(festivals)
-    day_of_week = random.choice(days_of_week)
-    weather = random.choice(weather_conditions)
-    distance = random.uniform(1.0, 300.0)
-    population_density = random.randint(1000, 20000)
+# แปลงข้อมูลเป็น Tensor
+X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
+X_test_tensor = torch.tensor(X_test, dtype=torch.float32)
+y_train_tensor = torch.tensor(y_train, dtype=torch.long)
+y_test_tensor = torch.tensor(y_test, dtype=torch.long)
 
-    base_traffic = 1
-    base_time = distance * 2
-
-    if time_period in ["06:00-09:00", "15:00-18:00"]:
-        base_traffic += 2
-        base_time *= 1.5
-
-    if festival in ["สงกรานต์", "ปีใหม่"]:
-        base_traffic += 3
-        base_time *= 2.0
-    elif festival == "เปิดเทอม" and day_of_week not in ["เสาร์", "อาทิตย์"]:
-        base_traffic += 2
-        base_time *= 1.3
-
-    if weather == "ฝนตก":
-        base_traffic += 1
-        base_time *= 1.2
-    elif weather == "ฝนตกหนัก":
-        base_traffic += 2
-        base_time *= 1.5
-    elif weather == "หมอก":
-        base_traffic += 1
-        base_time *= 1.3
-
-    if population_density > 15000:
-        base_traffic += 1
-        base_time *= 1.2
-
-    traffic_level = min(max(int(base_traffic + random.uniform(-0.5, 0.5)), 1), 4)
-    travel_time = max(base_time + random.uniform(-10, 10), 5)
-
-    data.append([start_location, end_location, time_period, year, festival, day_of_week, weather, distance, population_density, traffic_level, travel_time])
-
-# สร้าง DataFrame
-columns = ["Start_Location", "End_Location", "Time_Period", "Year", "Festival", "Day_of_Week", "Weather", "Distance", "Population_Density", "Traffic_Level", "Travel_Time"]
-df = pd.DataFrame(data, columns=columns)
+# สร้าง DataLoader
+train_data = TensorDataset(X_train_tensor, y_train_tensor)
+test_data = TensorDataset(X_test_tensor, y_test_tensor)
+train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
+test_loader = DataLoader(test_data, batch_size=32)
 '''
         st.code(code, language="python", line_numbers=False, wrap_lines=False, height=False)
 
         st.markdown("""<h5 style='font-family: Athiti;'>
-    4.ใช้ LabelEncoder แปลงข้อมูลประเภท categorical (เช่น สถานที่, เทศกาล) เป็นตัวเลข แบ่งข้อมูลเป็นชุดฝึก (80%) และชุดทดสอบ (20%)
+    4.สร้างโมเดล Neural Network ด้วย PyTorch โดยใช้ architecture ที่ประกอบด้วย 2 เลเยอร์ที่เป็น Fully Connected Layers. 
+                    เลเยอร์แรกมี 128 นิวรอนและเชื่อมต่อกับอินพุตที่มีขนาด 5000. เลเยอร์ที่สองมี 3 นิวรอน ซึ่งจะส่งออก 3 
+                    คลาสที่แสดงถึงความคิดเห็นในเชิงลบ, กลาง, และบวก.
     </h5>""", unsafe_allow_html=True)
         
-        code = '''# แปลงข้อมูล categorical เป็นตัวเลข
-le_start = LabelEncoder()
-le_end = LabelEncoder()
-le_time = LabelEncoder()
-le_festival = LabelEncoder()
-le_day = LabelEncoder()
-le_weather = LabelEncoder()
-
-df["Start_Location"] = le_start.fit_transform(df["Start_Location"])
-df["End_Location"] = le_end.fit_transform(df["End_Location"])
-df["Time_Period"] = le_time.fit_transform(df["Time_Period"])
-df["Festival"] = le_festival.fit_transform(df["Festival"])
-df["Day_of_Week"] = le_day.fit_transform(df["Day_of_Week"])
-df["Weather"] = le_weather.fit_transform(df["Weather"])
-
-# Normalize ข้อมูล
-scaler_X = StandardScaler()
-scaler_y = StandardScaler()
-
-X = df[["Start_Location", "End_Location", "Time_Period", "Year", "Festival", "Day_of_Week", "Weather", "Distance", "Population_Density"]].values
-y = df[["Traffic_Level", "Travel_Time"]].values
-
-X = scaler_X.fit_transform(X)
-y = scaler_y.fit_transform(y)
-
-# แบ่งข้อมูล
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-# บันทึกข้อมูลใน wandb
-wandb.log({"train_samples": len(X_train), "test_samples": len(X_test)})
-'''
-        st.code(code, language="python", line_numbers=False, wrap_lines=False, height=False)
-
-        st.markdown("""<h5 style='font-family: Athiti;'>
-    5.สร้างคลาส TrafficDataset เพื่อจัดการข้อมูลในรูปแบบที่ PyTorch ใช้ได้ , สร้าง DataLoader เพื่อแบ่งข้อมูลเป็น batch และจัดการการสับข้อมูล
-    </h5>""", unsafe_allow_html=True)
-        
-        code = '''# สร้าง Dataset และ DataLoader
-class TrafficDataset(Dataset):
-    def __init__(self, X, y):
-        self.X = torch.tensor(X, dtype=torch.float32).to(device)
-        self.y = torch.tensor(y, dtype=torch.float32).to(device)
-
-    def __len__(self):
-        return len(self.X)
-
-    def __getitem__(self, idx):
-        return self.X[idx], self.y[idx]
-
-train_dataset = TrafficDataset(X_train, y_train)
-test_dataset = TrafficDataset(X_test, y_test)
-
-train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True)
-test_loader = DataLoader(test_dataset, batch_size=128, shuffle=False)
-'''
-        st.code(code, language="python", line_numbers=False, wrap_lines=False, height=False)
-
-        st.markdown("""<h5 style='font-family: Athiti;'>
-    6.สร้างโมเดล Neural Network ที่มี 5 ชั้น (fully connected layers) และ
-เพิ่ม ReLU เป็น activation function และ Dropout เพื่อป้องกัน overfitting
-    </h5>""", unsafe_allow_html=True)
-        
-        code = '''# สร้างโมเดลที่ปรับปรุง
-class ImprovedTrafficNet(nn.Module):
-    def __init__(self, input_size):
-        super(ImprovedTrafficNet, self).__init__()
-        self.fc1 = nn.Linear(input_size, 128)
-        self.fc2 = nn.Linear(128, 64)
-        self.fc3 = nn.Linear(64, 32)
-        self.fc4 = nn.Linear(32, 16)
-        self.fc5 = nn.Linear(16, 2)
+        code = '''# สร้างโมเดล
+class SentimentNN(nn.Module):
+    def __init__(self):
+        super(SentimentNN, self).__init__()
+        self.fc1 = nn.Linear(5000, 128)
+        self.fc2 = nn.Linear(128, 3)
         self.relu = nn.ReLU()
-        self.dropout = nn.Dropout(0.5)
+        self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x):
         x = self.relu(self.fc1(x))
-        x = self.dropout(x)
-        x = self.relu(self.fc2(x))
-        x = self.dropout(x)
-        x = self.relu(self.fc3(x))
-        x = self.relu(self.fc4(x))
-        x = self.fc5(x)
-        return x
+        x = self.fc2(x)
+        return self.softmax(x)
 
-# Initialize โมเดล
-model = ImprovedTrafficNet(input_size=X_train.shape[1]).to(device)
+model = SentimentNN()
 '''
         st.code(code, language="python", line_numbers=False, wrap_lines=False, height=False)
 
         st.markdown("""<h5 style='font-family: Athiti;'>
-    7.กำหนด loss function (MSELoss), optimizer (Adam), และ scheduler เพื่อปรับ learning rate
-ฝึกโมเดล 100 epochs คำนวณ loss และบันทึกใน wandb
+    5.โมเดลนี้ใช้ CrossEntropyLoss เป็น Loss Function สำหรับการคำนวณค่าผิดพลาดระหว่างค่าที่คาดการณ์และค่าจริง. 
+                    ส่วน Adam optimizer ถูกใช้ในการปรับค่าพารามิเตอร์ของโมเดล.
     </h5>""", unsafe_allow_html=True)
         
-        code = '''# Define loss และ optimizer
-criterion = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr=0.0001, weight_decay=1e-5)
-scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5, verbose=True)
+        code = '''# Loss function และ Optimizer
+criterion = nn.CrossEntropyLoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+'''
+        st.code(code, language="python", line_numbers=False, wrap_lines=False, height=False)
 
-# ฝึกโมเดล
-num_epochs = 100
-best_val_loss = float('inf')
-patience = 10
-counter = 0
-
+        st.markdown("""<h5 style='font-family: Athiti;'>
+    6.โมเดลจะถูกฝึกด้วยข้อมูลที่แบ่งไว้ในชุดฝึก. ในแต่ละรอบการฝึก (epoch), โมเดลจะคำนวณค่า Loss จากข้อมูลที่ป้อนเข้าไปและปรับค่าพารามิเตอร์โดยใช้ optimizer. 
+                    กระบวนการนี้จะดำเนินไปจนถึงจำนวน epoch ที่กำหนด.
+    </h5>""", unsafe_allow_html=True)
+        
+        code = '''# ฝึกโมเดล
+num_epochs = 60
 for epoch in range(num_epochs):
     model.train()
-    train_loss = 0
-    for X_batch, y_batch in train_loader:
+    running_loss = 0.0
+    for inputs, labels in train_loader:
         optimizer.zero_grad()
-        outputs = model(X_batch)
-        loss = criterion(outputs, y_batch)
+        outputs = model(inputs)
+        loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
-        train_loss += loss.item()
+        running_loss += loss.item()
+    print(f'Epoch {epoch+1}/{num_epochs}, Loss: {running_loss/len(train_loader)}')
+'''
+        st.code(code, language="python", line_numbers=False, wrap_lines=False, height=False)
 
-    model.eval()
-    val_loss = 0
-    with torch.no_grad():
-        for X_batch, y_batch in test_loader:
-            outputs = model(X_batch)
-            loss = criterion(outputs, y_batch)
-            val_loss += loss.item()
+        st.markdown("""<h5 style='font-family: Athiti;'>
+    7.หลังจากการฝึกเสร็จสิ้น, โมเดลจะถูกทดสอบด้วยชุดทดสอบที่ไม่ได้ใช้ในการฝึก. เราคำนวณอัตราความถูกต้อง (accuracy) 
+                    โดยการเปรียบเทียบผลลัพธ์ที่คาดการณ์กับค่าจริง.
+    </h5>""", unsafe_allow_html=True)
+        
+        code = '''# ประเมินโมเดล
+model.eval()
+correct = 0
+total = 0
+with torch.no_grad():
+    for inputs, labels in test_loader:
+        outputs = model(inputs)
+        _, predicted = torch.max(outputs, 1)
+        total += labels.size(0)
+        correct += (predicted == labels).sum().item()
 
-    train_loss = train_loss / len(train_loader)
-    val_loss = val_loss / len(test_loader)
+print(f'Accuracy: {100 * correct / total}%')
+'''
+        st.code(code, language="python", line_numbers=False, wrap_lines=False, height=False)
 
-    wandb.log({"epoch": epoch + 1, "train_loss": train_loss, "val_loss": val_loss})
-    print(f"Epoch {epoch+1}/{num_epochs}, Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}")
+        st.markdown("""<h5 style='font-family: Athiti;'>
+    8.เมื่อโมเดลได้รับการฝึกเสร็จสมบูรณ์, โมเดลและตัวแปลงข้อความ (TF-IDF vectorizer และ Label encoder) 
+                    จะถูกบันทึกลงไฟล์เพื่อใช้ในอนาคต. 
+                    การบันทึกนี้ช่วยให้เราโหลดโมเดลและตัวแปลงที่ฝึกแล้วมาใช้ในการทำนายในขั้นตอนถัดไปโดยไม่ต้องฝึกใหม่.
+    </h5>""", unsafe_allow_html=True)
+        
+        code = '''# บันทึกโมเดลและตัวแปลงข้อความ
+joblib.dump(model, 'sentiment_model.pkl')
+torch.save(model.state_dict(), 'sentiment_model.pth')
+joblib.dump(tfidf, 'tfidf_vectorizer.pkl')
+joblib.dump(label_encoder, 'label_encoder.pkl')
 
-    scheduler.step(val_loss)
-
-    if val_loss < best_val_loss:
-        best_val_loss = val_loss
-        counter = 0
-        torch.save(model.state_dict(), "best_traffic_prediction_model.pt")
-    else:
-        counter += 1
-        if counter >= patience:
-            print("Early stopping triggered.")
-            break
+print("Model and Vectorizer saved successfully!")
 '''
         st.code(code, language="python", line_numbers=False, wrap_lines=False, height=False)
 

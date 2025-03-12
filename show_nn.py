@@ -1,43 +1,81 @@
 import torch
 import torch.nn as nn
 import streamlit as st
-from PIL import Image
-from torchvision import models
+import joblib
+from sklearn.feature_extraction.text import TfidfVectorizer
 
-
-# กำหนดคลาสโมเดลที่คุณต้องการใช้
-class CustomModel(nn.Module):
-    def __init__(self):
-        super(CustomModel, self).__init__()
-        # ใช้โมเดลตัวอย่างจาก torchvision หรือกำหนดโมเดลของคุณเอง
-        self.features = models.resnet18(pretrained=True).conv1
-
-    def forward(self, x):
-        return self.features(x)
-
-# โหลดโมเดลจากไฟล์ .pth
-def load_model(model_path):
-    model = CustomModel()
-    model.load_state_dict(torch.load(model_path))
-    model.eval()
-    return model
-
-# แสดงผลโมเดลใน Streamlit
-def show_nn():
-    model_path = "model/pet_detect_detector.pth"
+# สร้างโมเดล Neural Network สำหรับการทำนาย Sentiment
+class SentimentNN(nn.Module):
+    def __init__(self, input_size=5000, hidden_size=128, output_size=3):
+        super(SentimentNN, self).__init__()
+        self.fc1 = nn.Linear(input_size, hidden_size)
+        self.relu = nn.ReLU()
+        self.fc2 = nn.Linear(hidden_size, output_size)
     
-    # โหลดโมเดล
-    model = load_model(model_path)
+    def forward(self, x):
+        x = self.fc1(x)
+        x = self.relu(x)
+        x = self.fc2(x)
+        return x
 
-    # ใช้ torchsummary เพื่อแสดงสรุปของโมเดล
-    st.write("### Summary of the Model:")
-    summary(model, (3, 224, 224))  # กำหนดขนาดของภาพที่โมเดลคาดว่าจะได้รับ
 
-    # แสดงตัวอย่างภาพที่ต้องการทดสอบโมเดล
-    image_path = "C:/path/to/image.jpg"
-    img = Image.open(image_path)
-    st.image(img, caption="Test Image", use_column_width=True)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # เพิ่มโค้ดสำหรับการทำนายและแสดงผลลัพธ์
-    # เชื่อมต่อโค้ดการทำนายตามที่ต้องการ
-    st.write("Model loaded and ready for inference!")
+# โหลดโมเดลและ TF-IDF vectorizer
+try:
+    model = SentimentNN().to(device)  # Initialize with default input_size=5000
+    model.load_state_dict(torch.load("model/sentiment_model.pth", map_location=device))
+    model.eval()
+    tfidf = joblib.load('model/tfidf_vectorizer.pkl')
+except FileNotFoundError as e:
+    st.error(f"Error loading files: {e}. Check if 'model/sentiment_model.pth' and 'model/tfidf_vectorizer.pkl' exist.")
+    raise
+
+# ฟังก์ชันสำหรับทำนายผล Sentiment
+def predict_sentiment(text):
+    try:
+        # แปลงข้อความเป็น TF-IDF vector
+        text_vector = tfidf.transform([text]).toarray()
+        # ทำนายผลลัพธ์จากโมเดล
+        with torch.no_grad():
+            inputs = torch.tensor(text_vector, dtype=torch.float32).to(device)
+            outputs = model(inputs)
+            _, predicted = torch.max(outputs, 1)
+        
+        sentiment = ["Negative", "Neutral", "Positive"][predicted.item()]
+        
+        # Map sentiment to emoji
+        sentiment_emoji = {
+            "Negative": "😞",
+            "Neutral": "😐",
+            "Positive": "😀"
+        }
+        
+        # Return sentiment and emoji
+        return f"{sentiment} {sentiment_emoji[sentiment]}"
+    except Exception as e:
+        st.error(f"Prediction error: {e}")
+        return None
+
+# ฟังก์ชันในการแสดงผล
+def show_nn():
+    st.markdown("""<h1 style='font-family: Athiti; text-align: center;'>
+    YouTube Comment Sentiment Analysis
+    </h1>""", unsafe_allow_html=True)
+
+    if 'sentiment_result' not in st.session_state:
+        st.session_state.sentiment_result = None
+
+    user_input = st.text_area("Enter the YouTube Comment to Predict Sentiment:")
+    if st.button("🎭Predict Sentiment"):
+        if user_input:
+            sentiment = predict_sentiment(user_input)
+            if sentiment:
+                # Store the result in session state
+                st.session_state.sentiment_result = sentiment
+        else:
+            st.session_state.sentiment_result = "Please enter a comment for prediction."
+
+    # Display the stored result (won’t disappear on rerun)
+    if st.session_state.sentiment_result:
+        st.write(f"Predicted Sentiment: {st.session_state.sentiment_result}")
